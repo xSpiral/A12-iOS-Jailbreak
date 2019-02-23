@@ -46,6 +46,10 @@ int dumpOffsetsToFile(char *file) {
     off.kernelbase = KernelBase;
     off.trustcache = Find_trustcache();
     
+    printf("%llu - vnode_lookup", off.vnode_lookup);
+    printf("%llu - vnode_put", off.vnode_put);
+    
+    
     FILE *f = fopen(file, "wb");
     fwrite(&off, sizeof(struct offsets), 1, f);
     fclose(f);

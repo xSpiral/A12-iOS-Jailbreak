@@ -15,6 +15,7 @@
 #import "payload.h"
 #import "offsetsDump.h"
 #import "exploit/voucher_swap/kernel_slide.h"
+#import "exploit/voucher_swap/kernel_memory.h"
 #import "exploit/voucher_swap/kernel_call.h"
 #import "exploit/voucher_swap/post/post.h"
 #import "exploit/voucher_swap/post/offsets.h"
@@ -414,7 +415,7 @@ Post *post;
         
         
         failIf(trustbin("/var/containers/Bundle/iosbinpack64"), "[-] Failed to trust binaries!");
-        usleep(1000);
+        sleep(1);
         failIf(trustbin("/var/containers/Bundle/tweaksupport"), "[-] Failed to trust binaries!");
         
         // test
@@ -443,15 +444,15 @@ Post *post;
     // kill it if running
     launch("/var/containers/Bundle/iosbinpack64/usr/bin/killall", "-SEGV", "dropbear", NULL, NULL, NULL, NULL, NULL);
     
-    execu("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", 2, "-R", "-E");
-    pid_t dpd = pid_of_procName("dropbear");
-    usleep(1000);
-    if (!dpd) execu("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", 2, "-R", "-E");
-    
-//    failIf(launchAsPlatform("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", "-R", "-E", NULL, NULL, NULL, NULL, NULL), "[-] Failed to launch dropbear");
+//    execu("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", 2, "-R", "-E");
 //    pid_t dpd = pid_of_procName("dropbear");
 //    usleep(1000);
-//    if (!dpd) failIf(launchAsPlatform("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", "-R", "-E", NULL, NULL, NULL, NULL, NULL), "[-] Failed to launch dropbear");
+//    if (!dpd) execu("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", 2, "-R", "-E");
+    
+    failIf(launchAsPlatform("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", "-R", "-E", NULL, NULL, NULL, NULL, NULL), "[-] Failed to launch dropbear");
+    pid_t dpd = pid_of_procName("dropbear");
+    usleep(1000);
+    if (!dpd) failIf(launchAsPlatform("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", "-R", "-E", NULL, NULL, NULL, NULL, NULL), "[-] Failed to launch dropbear");
     
     //------------- launch daeamons -------------//
     //-- you can drop any daemon plist in iosbinpack64/LaunchDaemons and it will be loaded automatically --//
@@ -534,7 +535,9 @@ Post *post;
         fvp.v_nclinks = rvp.v_nclinks;
                          
         
-        kwrite(realxpc, &fvp, sizeof(struct vnode)); // :o
+        kernel_write(realxpc, &fvp, sizeof(struct vnode)); // :o
+        
+//        kwrite(realxpc, &fvp, sizeof(struct vnode)); // :o
   
         LOG("[?] Are we still alive?!");
         
@@ -557,16 +560,29 @@ Post *post;
         if ([self.installiSuperSU isOn]) {
             LOG("[*] Installing iSuperSU");
             
+            sleep(1);
+            
             removeFile("/var/containers/Bundle/tweaksupport/Applications/iSuperSU.app");
             copyFile(in_bundle("apps/iSuperSU.app"), "/var/containers/Bundle/tweaksupport/Applications/iSuperSU.app");
             
-            failIf(system_("/var/containers/Bundle/tweaksupport/usr/local/bin/jtool --sign --inplace --ent /var/containers/Bundle/tweaksupport/Applications/iSuperSU.app/ent.xml /var/containers/Bundle/tweaksupport/Applications/iSuperSU.app/iSuperSU && /var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/Applications/iSuperSU.app/iSuperSU"), "[-] Failed to sign iSuperSU");
+            failIf(system_("/var/containers/Bundle/tweaksupport/usr/local/bin/jtool --sign --inplace --ent /var/containers/Bundle/tweaksupport/Applications/iSuperSU.app/ent.xml /var/containers/Bundle/tweaksupport/Applications/iSuperSU.app/iSuperSU"), "[-] Failed to sign iSuperSU");
             
+//             && /var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/Applications/iSuperSU.app/iSuperSU
+            
+            failIf(trustbin("/var/containers/Bundle/tweaksupport/Applications/iSuperSU.app/iSuperSU"), "[-] Failed to Inject iSuperSU");
             
             // just in case
             fixMmap("/var/ulb/libsubstitute.dylib");
             fixMmap("/var/LIB/Frameworks/CydiaSubstrate.framework/CydiaSubstrate");
             fixMmap("/var/LIB/MobileSubstrate/DynamicLibraries/AppSyncUnified.dylib");
+            
+//            execu("/var/containers/Bundle/tweaksupport/usr/bin/uicache", 0);
+//
+////            pid_t uicache = pid_of_procName("uicache");
+////            if (uicache) kill(uicache, SIGKILL);
+//
+////            pid_t uicache = pid_of_procName("uicache");
+////            if (uicache) kill(uicache, SIGKILL);
             
             failIf(launch("/var/containers/Bundle/tweaksupport/usr/bin/uicache", NULL, NULL, NULL, NULL, NULL, NULL, NULL), "[-] Failed to install iSuperSU");
 
@@ -636,7 +652,12 @@ Post *post;
                     if (([[NSFileManager defaultManager] fileExistsAtPath:[NSString stringWithFormat:@"%@/.jb",fullAppBundlePath]] || ![[NSFileManager defaultManager] fileExistsAtPath:_CodeSignature] || (executable && ![executable isEqual:@"Executable"] && !BuildMachineOSBuild & !hasDTCompilerRelatedKeys)) && fileExists([executable UTF8String])) {
                         
                         LOG("Injecting executable %s",[executable UTF8String]);
-                        system_((char *)[[NSString stringWithFormat:@"/var/containers/Bundle/iosbinpack64/usr/bin/inject %s", [executable UTF8String]] UTF8String]);
+                        
+                        sleep(1);
+                        
+                        trustbin([executable UTF8String]);
+                        
+//                        system_((char *)[[NSString stringWithFormat:@"/var/containers/Bundle/iosbinpack64/usr/bin/inject %s", [executable UTF8String]] UTF8String]);
                     }
                     
                 }
@@ -675,6 +696,7 @@ Post *post;
 end:;
     
     if (sb) sandbox(getpid(), sb);
+    kernel_call_deinit();
     term_jelbrek();
 }
 
@@ -764,7 +786,7 @@ end:;
         exit(1);
     }
     
-    
+    offs_init();
     
     if (kernel_call_init()){
         printf("Kernel exectution initialized");
@@ -773,12 +795,13 @@ end:;
     }
     
     if (!KernelBase) {
+        kernel_slide_init();
         init_with_kbase(taskforpidzero, 0xfffffff007004000 + kernel_slide, nil);
         
     }
     else {
-        init_with_kbase(taskforpidzero, KernelBase, nil);
         
+        init_with_kbase(taskforpidzero, KernelBase, nil);
     }
     
     LOG("[i] Kernel base: 0x%llx", KernelBase);
@@ -860,7 +883,7 @@ void execu(const char* path, int argc, ...) {
     
     posix_spawnattr_t attr;
     posix_spawnattr_init(&attr);
-    posix_spawnattr_setflags(&attr, POSIX_SPAWN_START_SUSPENDED);
+    posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETEXEC);
     
     posix_spawn(&pp, path, NULL, &attr, (char *const*)argv, NULL);
     

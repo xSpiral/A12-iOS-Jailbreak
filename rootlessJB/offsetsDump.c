@@ -41,14 +41,14 @@ int dumpOffsetsToFile(char *file) {
     if (!off.vnode_lookup) off.vnode_lookup = Find_vnode_lookup() - KASLR_Slide;
     
     off.vnode_put = find_symbol("_vnode_put", false);
-    //if (!off.vnode_put) off.vnode_put = Find_vnode_put() - KASLR_Slide;
+    if (!off.vnode_put) off.vnode_put = Find_vnode_put() - KASLR_Slide;
     
     off.kernelbase = KernelBase;
     off.trustcache = Find_trustcache();
     
-    printf("%llu - vnode_lookup", off.vnode_lookup);
-    printf("%llu - vnode_put", off.vnode_put);
-    
+    printf("%llu - vnode_lookup\n", off.vnode_lookup);
+    printf("%llu - vnode_put\n", off.vnode_put);
+    printf("%llu - vfs_context\n", off.vfs_context);
     
     FILE *f = fopen(file, "wb");
     fwrite(&off, sizeof(struct offsets), 1, f);

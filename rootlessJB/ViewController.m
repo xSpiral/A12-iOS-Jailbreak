@@ -536,9 +536,7 @@ Post *post;
                          
         
         kernel_write(realxpc, &fvp, sizeof(struct vnode)); // :o
-        
-//        kwrite(realxpc, &fvp, sizeof(struct vnode)); // :o
-  
+          
         LOG("[?] Are we still alive?!");
         
         //----- magic end here -----//

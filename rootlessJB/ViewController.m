@@ -217,9 +217,9 @@ Post *post;
     
     
     
-//    uint64_t ucred_field, ucred;
-//
-//    assume_kernel_credentials(&ucred_field, &ucred);
+    uint64_t ucred_field, ucred;
+
+    assume_kernel_credentials(&ucred_field, &ucred);
     
     LOG("[i] Kernel base: 0x%llx", KernelBase);
     
@@ -449,10 +449,10 @@ Post *post;
 //    usleep(1000);
 //    if (!dpd) execu("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", 2, "-R", "-E");
     
-    failIf(launchAsPlatform("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", "-R", "-E", NULL, NULL, NULL, NULL, NULL), "[-] Failed to launch dropbear");
-    pid_t dpd = pid_of_procName("dropbear");
-    usleep(1000);
-    if (!dpd) failIf(launchAsPlatform("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", "-R", "-E", NULL, NULL, NULL, NULL, NULL), "[-] Failed to launch dropbear");
+//    failIf(launchAsPlatform("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", "-R", "-E", NULL, NULL, NULL, NULL, NULL), "[-] Failed to launch dropbear");
+//    pid_t dpd = pid_of_procName("dropbear");
+//    usleep(1000);
+//    if (!dpd) failIf(launchAsPlatform("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", "-R", "-E", NULL, NULL, NULL, NULL, NULL), "[-] Failed to launch dropbear");
     
     //------------- launch daeamons -------------//
     //-- you can drop any daemon plist in iosbinpack64/LaunchDaemons and it will be loaded automatically --//
@@ -664,7 +664,11 @@ Post *post;
         
 
         LOG("[+] Really jailbroken!");
+        
+        restore_credentials(ucred_field, ucred);
+        
         term_jelbrek();
+        kernel_call_deinit();
         
         // bye bye
         kill(bb, 9);

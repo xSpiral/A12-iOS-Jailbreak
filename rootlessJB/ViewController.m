@@ -449,6 +449,12 @@ Post *post;
 //    usleep(1000);
 //    if (!dpd) execu("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", 2, "-R", "-E");
     
+    runCommand("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", "-R", "-E");
+    pid_t dpd = pid_of_procName("dropbear");
+    usleep(1000);
+    if (!dpd) {
+        printf("did not run dropbear");
+    }
 //    failIf(launchAsPlatform("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", "-R", "-E", NULL, NULL, NULL, NULL, NULL), "[-] Failed to launch dropbear");
 //    pid_t dpd = pid_of_procName("dropbear");
 //    usleep(1000);
@@ -868,35 +874,140 @@ end:;
 }
 
 
-void execu(const char* path, int argc, ...) {
-    pid_t pp;
+//void execu(const char* path, int argc, ...) {
+//    pid_t pp;
+//
+//    va_list ap;
+//    va_start(ap, argc);
+//
+//    const char ** argv = malloc(argc+2);
+//    argv[0] = path;
+//    for (int i = 1; i <= argc; i++) {
+//        argv[i] = va_arg(ap, const char*);
+//    }
+//    va_end(ap);
+//    argv[argc+1] = NULL;
+//
+//
+//    posix_spawnattr_t attr;
+//    posix_spawnattr_init(&attr);
+//    posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETEXEC);
+//
+//    posix_spawn(&pp, path, NULL, &attr, (char *const*)argv, NULL);
+//
+//    platformize(pp);
+//
+////    kill(pp, SIGCONT); //continue
+////
+////    int a = 0;
+////    waitpid(pp, &a, 0);
+//
+//    free(argv);
+//}
+
+
+int runCommand(const char *cmd, ...) {
+    va_list ap, ap2;
+    int argc = 1;
     
-    va_list ap;
-    va_start(ap, argc);
+    va_start(ap, cmd);
+    va_copy(ap2, ap);
     
-    const char ** argv = malloc(argc+2);
-    argv[0] = path;
-    for (int i = 1; i <= argc; i++) {
-        argv[i] = va_arg(ap, const char*);
+    while (va_arg(ap, const char *) != NULL) {
+        argc++;
     }
     va_end(ap);
-    argv[argc+1] = NULL;
     
+    const char *argv[argc+1];
+    argv[0] = cmd;
+    for (int i=1; i<argc; i++) {
+        argv[i] = va_arg(ap2, const char *);
+    }
+    va_end(ap2);
+    argv[argc] = NULL;
     
-    posix_spawnattr_t attr;
-    posix_spawnattr_init(&attr);
-    posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETEXEC);
+    int rv = runCommandv(cmd, argc, argv, NULL);
+    return WEXITSTATUS(rv);
+}
+
+int runCommandv(const char *cmd, int argc, const char * const* argv, void (^unrestrict)(pid_t)) {
+    pid_t pid;
+    posix_spawn_file_actions_t *actions = NULL;
+    posix_spawn_file_actions_t actionsStruct;
+    int out_pipe[2];
+    bool valid_pipe = false;
+    posix_spawnattr_t *attr = NULL;
+    posix_spawnattr_t attrStruct;
     
-    posix_spawn(&pp, path, NULL, &attr, (char *const*)argv, NULL);
+//    NSMutableString *cmdstr = [NSMutableString stringWithCString:cmd encoding:NSUTF8StringEncoding];
+//    for (int i=1; i<argc; i++) {
+//        [cmdstr appendFormat:@" \"%s\"", argv[i]];
+//    }
     
-    platformize(pp);
+    valid_pipe = pipe(out_pipe) == ERR_SUCCESS;
+    if (valid_pipe && posix_spawn_file_actions_init(&actionsStruct) == ERR_SUCCESS) {
+        actions = &actionsStruct;
+        posix_spawn_file_actions_adddup2(actions, out_pipe[1], 1);
+        posix_spawn_file_actions_adddup2(actions, out_pipe[1], 2);
+        posix_spawn_file_actions_addclose(actions, out_pipe[0]);
+        posix_spawn_file_actions_addclose(actions, out_pipe[1]);
+    }
     
-//    kill(pp, SIGCONT); //continue
-//
-//    int a = 0;
-//    waitpid(pp, &a, 0);
+    if (unrestrict && posix_spawnattr_init(&attrStruct) == ERR_SUCCESS) {
+        attr = &attrStruct;
+        posix_spawnattr_setflags(attr, POSIX_SPAWN_START_SUSPENDED);
+    }
     
-    free(argv);
+    int rv = posix_spawn(&pid, cmd, actions, attr, (char *const *)argv, NULL);
+//    LOG("%s(%d) command: %s", __FUNCTION__, pid, cmdstr);
+    
+    if (unrestrict) {
+        unrestrict(pid);
+        kill(pid, SIGCONT);
+    }
+    
+    if (valid_pipe) {
+        close(out_pipe[1]);
+    }
+    
+    if (rv == ERR_SUCCESS) {
+        if (valid_pipe) {
+            NSMutableData *outData = [NSMutableData new];
+            char c;
+            char s[2] = {0, 0};
+            NSMutableString *line = [NSMutableString new];
+            while (read(out_pipe[0], &c, 1) == 1) {
+                [outData appendBytes:&c length:1];
+                if (c == '\n') {
+//                    LOG("%s(%d): %s", __FUNCTION__, pid, line);
+                    [line setString:@""];
+                } else {
+                    s[0] = c;
+                    [line appendString:@(s)];
+                }
+            }
+            if ([line length] > 0) {
+//                LOG("%s(%d): %@", __FUNCTION__, pid, line);
+            }
+            //lastSystemOutput = [outData copy];
+        }
+        if (waitpid(pid, &rv, 0) == -1) {
+//            LOG("ERROR: Waitpid failed");
+            printf("waitpid failed");
+        } else {
+            printf("completed");
+            //LOG("%s(%d) completed with exit status %d", __FUNCTION__, pid, WEXITSTATUS(rv));
+        }
+        
+    } else {
+        printf("posix spawn failed");
+        //LOG("%s(%d): ERROR posix_spawn failed (%d): %s", __FUNCTION__, pid, rv, strerror(rv));
+        rv <<= 8; // Put error into WEXITSTATUS
+    }
+    if (valid_pipe) {
+        close(out_pipe[0]);
+    }
+    return rv;
 }
 
 

@@ -45,7 +45,7 @@
 		8B306C50221C9D13005DF589 /* kernel_slide.c in Sources */ = {isa = PBXBuildFile; fileRef = 8B306C45221C9D13005DF589 /* kernel_slide.c */; };
 		8B306C61221C9D8E005DF589 /* post.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B306C5E221C9D8E005DF589 /* post.m */; };
 		8B306C62221C9D8E005DF589 /* offsets.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B306C5F221C9D8E005DF589 /* offsets.m */; };
-		8BB9D240222664D60037B3E3 /* jelbrekLib.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8BB9D23F222664D50037B3E3 /* jelbrekLib.a */; };
+		8BD18CC222266533005D83DA /* jelbrekLib.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8BD18CC122266533005D83DA /* jelbrekLib.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -139,7 +139,7 @@
 		8B306C5F221C9D8E005DF589 /* offsets.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = offsets.m; sourceTree = "<group>"; };
 		8B306C60221C9D8E005DF589 /* offsets.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = offsets.h; sourceTree = "<group>"; };
 		8B306C66221C9EA7005DF589 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = ../../../../Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/IOKit.framework; sourceTree = "<group>"; };
-		8BB9D23F222664D50037B3E3 /* jelbrekLib.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = jelbrekLib.a; sourceTree = "<group>"; };
+		8BD18CC122266533005D83DA /* jelbrekLib.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = jelbrekLib.a; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -151,7 +151,7 @@
 				8B277CA8221F75C500BD9869 /* libjb.a in Frameworks */,
 				8B277CA0221F6A8500BD9869 /* IOKit.framework in Frameworks */,
 				825D33952135D189008723F8 /* IOKit.tbd in Frameworks */,
-				8BB9D240222664D60037B3E3 /* jelbrekLib.a in Frameworks */,
+				8BD18CC222266533005D83DA /* jelbrekLib.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -261,7 +261,7 @@
 			isa = PBXGroup;
 			children = (
 				825D33932135D189008723F8 /* IOKit.tbd */,
-				8BB9D23F222664D50037B3E3 /* jelbrekLib.a */,
+				8BD18CC122266533005D83DA /* jelbrekLib.a */,
 				8B277CA7221F75C500BD9869 /* libjb.a */,
 			);
 			path = libs;

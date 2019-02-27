@@ -2,23 +2,25 @@
 
 Blah blah, read this: [How to make a jailbreak without a filesystem remount as r/w](https://github.com/jakeajames/rootlessJB/blob/master/writeup.pdf)
 
-- Powered by jelbrekLib
+- Powered by jelbrekLib64e
 
+## Supported 
 
-## Support
+- A12 devices
+
+## Future Support
 
 - All A9-A11 devices
 - All A7-A8 devices
 
-## To be supported (sorted by priority)
-
-- A12 devices
-
-**DO NOT ASK FOR ETA**
 
 ## Usage notes
 
-- voucher_swap is used for 16K devices, and v3ntex for 4K ones.
+Currently, it will get root, unsandbox, and inject binaries in the trustcache.
+However, jailrbeakd is not working, and running binaries(i.e. dropbear and uicache) and not working
+
+
+- voucher_swap is used for 16K devices
 - Binaries are located in: /var/containers/Bundle/iosbinpack64
 - Launch daemons are located in /var/containers/Bundle/iosbinpack64/LaunchDaemons
 - /var/containers/Bundle/tweaksupport contains a filesystem simulation where tweaks and stuff get installed
@@ -50,6 +52,6 @@ All executables must have at least these two entitlements:
 patcher usage:
 ./patcher /path/to/deb /path/to/output_folder
 
-Thanks to: Ian Beer, Brandon Azad, Jonathan Levin, Electra Team, IBSparkes, Sam Bingner, Sammy Guichelaar.
+Thanks to: Ian Beer, Brandon Azad, Jonathan Levin, Electra Team, IBSparkes, Sam Bingner, Sammy Guichelaar, xSpiral Team
 
 

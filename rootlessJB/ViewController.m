@@ -215,12 +215,6 @@ Post *post;
         init_with_kbase(taskforpidzero, KernelBase, nil);
     }
     
-    
-    
-    uint64_t ucred_field, ucred;
-
-    assume_kernel_credentials(&ucred_field, &ucred);
-    
     LOG("[i] Kernel base: 0x%llx", KernelBase);
     
     //---- basics ----//
@@ -436,29 +430,31 @@ Post *post;
     removeFile("/var/profile");
     removeFile("/var/motd");
     chmod("/var/profile", 0777);
+    
+    FILE *motd = fopen("/var/motd", "w");
+    struct utsname ut;
+    uname(&ut);
+    fprintf(motd, "A12 dropbear exec by @xavo95 implemented by @xSpiral \n");
+    fprintf(motd, "%s %s %s %s %s\n", ut.sysname, ut.nodename, ut.release, ut.version, ut.machine);
+    fclose(motd);
     chmod("/var/motd", 0777);
     
     copyFile("/var/containers/Bundle/iosbinpack64/etc/profile", "/var/profile");
     copyFile("/var/containers/Bundle/iosbinpack64/etc/motd", "/var/motd");
     
     // kill it if running
-    launch("/var/containers/Bundle/iosbinpack64/usr/bin/killall", "-SEGV", "dropbear", NULL, NULL, NULL, NULL, NULL);
+    launchVS("/var/containers/Bundle/iosbinpack64/usr/bin/killall", "-SEGV", "dropbear", NULL, NULL, NULL, NULL, NULL);
     
-//    execu("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", 2, "-R", "-E");
-//    pid_t dpd = pid_of_procName("dropbear");
-//    usleep(1000);
-//    if (!dpd) execu("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", 2, "-R", "-E");
-    
-    runCommand("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", "-R", "-E");
+    launchAsPlatformVS("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", "-R", "-E", "-p", "22", "-p", "2222", NULL);
+
     pid_t dpd = pid_of_procName("dropbear");
     usleep(1000);
+    
     if (!dpd) {
-        printf("did not run dropbear");
+        printf("NO dropbear, hmm");
+        launchAsPlatformVS("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", "-R", "-E", "-p", "22", "-p", "2222", NULL);
     }
-//    failIf(launchAsPlatform("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", "-R", "-E", NULL, NULL, NULL, NULL, NULL), "[-] Failed to launch dropbear");
-//    pid_t dpd = pid_of_procName("dropbear");
-//    usleep(1000);
-//    if (!dpd) failIf(launchAsPlatform("/var/containers/Bundle/iosbinpack64/usr/local/bin/dropbear", "-R", "-E", NULL, NULL, NULL, NULL, NULL), "[-] Failed to launch dropbear");
+    
     
     //------------- launch daeamons -------------//
     //-- you can drop any daemon plist in iosbinpack64/LaunchDaemons and it will be loaded automatically --//
@@ -579,16 +575,11 @@ Post *post;
             fixMmap("/var/ulb/libsubstitute.dylib");
             fixMmap("/var/LIB/Frameworks/CydiaSubstrate.framework/CydiaSubstrate");
             fixMmap("/var/LIB/MobileSubstrate/DynamicLibraries/AppSyncUnified.dylib");
+        
             
-//            execu("/var/containers/Bundle/tweaksupport/usr/bin/uicache", 0);
-//
-////            pid_t uicache = pid_of_procName("uicache");
-////            if (uicache) kill(uicache, SIGKILL);
-//
-////            pid_t uicache = pid_of_procName("uicache");
-////            if (uicache) kill(uicache, SIGKILL);
+//            failIf(launchAsPlatformVS("/var/containers/Bundle/tweaksupport/usr/bin/uicache", NULL, NULL, NULL, NULL, NULL, NULL, NULL), "[-] Failed to install iSuperSU");
             
-            failIf(launch("/var/containers/Bundle/tweaksupport/usr/bin/uicache", NULL, NULL, NULL, NULL, NULL, NULL, NULL), "[-] Failed to install iSuperSU");
+            //failIf(launchVS("/var/containers/Bundle/tweaksupport/usr/bin/uicache", NULL, NULL, NULL, NULL, NULL, NULL, NULL), "[-] Failed to install iSuperSU");
 
         }
         
@@ -670,8 +661,6 @@ Post *post;
         
 
         LOG("[+] Really jailbroken!");
-        
-        restore_credentials(ucred_field, ucred);
         
         term_jelbrek();
         kernel_call_deinit();
@@ -905,109 +894,48 @@ end:;
 //    free(argv);
 //}
 
-
-int runCommand(const char *cmd, ...) {
-    va_list ap, ap2;
-    int argc = 1;
+int launchVS(char *binary, char *arg1, char *arg2, char *arg3, char *arg4, char *arg5, char *arg6, char**env) {
+    pid_t pd;
+    const char* args[] = {binary, arg1, arg2, arg3, arg4, arg5, arg6,  NULL};
     
-    va_start(ap, cmd);
-    va_copy(ap2, ap);
-    
-    while (va_arg(ap, const char *) != NULL) {
-        argc++;
+    int rv = posix_spawn(&pd, binary, NULL, NULL, (char **)&args, env);
+    if (rv) {
+        printf("error spawing process %s", strerror(rv));
+        return rv;
     }
-    va_end(ap);
     
-    const char *argv[argc+1];
-    argv[0] = cmd;
-    for (int i=1; i<argc; i++) {
-        argv[i] = va_arg(ap2, const char *);
-    }
-    va_end(ap2);
-    argv[argc] = NULL;
+    int a = 0;
+    waitpid(pd, &a, 0);
     
-    int rv = runCommandv(cmd, argc, argv, NULL);
-    return WEXITSTATUS(rv);
+    return WEXITSTATUS(a);
 }
 
-int runCommandv(const char *cmd, int argc, const char * const* argv, void (^unrestrict)(pid_t)) {
-    pid_t pid;
-    posix_spawn_file_actions_t *actions = NULL;
-    posix_spawn_file_actions_t actionsStruct;
-    int out_pipe[2];
-    bool valid_pipe = false;
-    posix_spawnattr_t *attr = NULL;
-    posix_spawnattr_t attrStruct;
+
+int launchAsPlatformVS(char *binary, char *arg1, char *arg2, char *arg3, char *arg4, char *arg5, char *arg6, char**env) {
+    pid_t pd;
+    const char* args[] = {binary, arg1, arg2, arg3, arg4, arg5, arg6,  NULL};
     
-//    NSMutableString *cmdstr = [NSMutableString stringWithCString:cmd encoding:NSUTF8StringEncoding];
-//    for (int i=1; i<argc; i++) {
-//        [cmdstr appendFormat:@" \"%s\"", argv[i]];
-//    }
+    posix_spawnattr_t attr;
+    posix_spawnattr_init(&attr);
+    posix_spawnattr_setflags(&attr, POSIX_SPAWN_START_SUSPENDED); //this flag will make the created process stay frozen until we send the CONT signal. This so we can platformize it before it launches.
     
-    valid_pipe = pipe(out_pipe) == ERR_SUCCESS;
-    if (valid_pipe && posix_spawn_file_actions_init(&actionsStruct) == ERR_SUCCESS) {
-        actions = &actionsStruct;
-        posix_spawn_file_actions_adddup2(actions, out_pipe[1], 1);
-        posix_spawn_file_actions_adddup2(actions, out_pipe[1], 2);
-        posix_spawn_file_actions_addclose(actions, out_pipe[0]);
-        posix_spawn_file_actions_addclose(actions, out_pipe[1]);
+    int rv = posix_spawn(&pd, binary, NULL, &attr, (char **)&args, env);
+    if (rv) {
+        printf("error spawing process %s", strerror(rv));
+        return rv;
     }
     
-    if (unrestrict && posix_spawnattr_init(&attrStruct) == ERR_SUCCESS) {
-        attr = &attrStruct;
-        posix_spawnattr_setflags(attr, POSIX_SPAWN_START_SUSPENDED);
-    }
+    kern_return_t kret;
+    mach_port_t task;
+    kret = task_for_pid(mach_host_self(), pd, &task);
+    platformize(task);
     
-    int rv = posix_spawn(&pid, cmd, actions, attr, (char *const *)argv, NULL);
-//    LOG("%s(%d) command: %s", __FUNCTION__, pid, cmdstr);
+    kill(pd, SIGCONT); //continue
     
-    if (unrestrict) {
-        unrestrict(pid);
-        kill(pid, SIGCONT);
-    }
+    int a = 0;
+    waitpid(pd, &a, 0);
     
-    if (valid_pipe) {
-        close(out_pipe[1]);
-    }
-    
-    if (rv == ERR_SUCCESS) {
-        if (valid_pipe) {
-            NSMutableData *outData = [NSMutableData new];
-            char c;
-            char s[2] = {0, 0};
-            NSMutableString *line = [NSMutableString new];
-            while (read(out_pipe[0], &c, 1) == 1) {
-                [outData appendBytes:&c length:1];
-                if (c == '\n') {
-//                    LOG("%s(%d): %s", __FUNCTION__, pid, line);
-                    [line setString:@""];
-                } else {
-                    s[0] = c;
-                    [line appendString:@(s)];
-                }
-            }
-            if ([line length] > 0) {
-//                LOG("%s(%d): %@", __FUNCTION__, pid, line);
-            }
-            //lastSystemOutput = [outData copy];
-        }
-        if (waitpid(pid, &rv, 0) == -1) {
-//            LOG("ERROR: Waitpid failed");
-            printf("waitpid failed");
-        } else {
-            printf("completed");
-            //LOG("%s(%d) completed with exit status %d", __FUNCTION__, pid, WEXITSTATUS(rv));
-        }
-        
-    } else {
-        printf("posix spawn failed");
-        //LOG("%s(%d): ERROR posix_spawn failed (%d): %s", __FUNCTION__, pid, rv, strerror(rv));
-        rv <<= 8; // Put error into WEXITSTATUS
-    }
-    if (valid_pipe) {
-        close(out_pipe[0]);
-    }
-    return rv;
+    return WEXITSTATUS(a);
 }
 
 

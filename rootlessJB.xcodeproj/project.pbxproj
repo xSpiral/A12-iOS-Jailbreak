@@ -31,6 +31,7 @@
 		8B277CA0221F6A8500BD9869 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B306C66221C9EA7005DF589 /* IOKit.framework */; };
 		8B277CA2221F6A9100BD9869 /* IOSurface.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B277CA1221F6A9100BD9869 /* IOSurface.framework */; };
 		8B277CA8221F75C500BD9869 /* libjb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B277CA7221F75C500BD9869 /* libjb.a */; };
+		8B2A08092229F9610015B116 /* jelbrekLib.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8B2A08082229F9610015B116 /* jelbrekLib.a */; };
 		8B306C2D221C968B005DF589 /* untar.c in Sources */ = {isa = PBXBuildFile; fileRef = 8B306C2C221C968B005DF589 /* untar.c */; };
 		8B306C30221C97B8005DF589 /* lzssdec.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8B306C2F221C97B8005DF589 /* lzssdec.cpp */; };
 		8B306C47221C9D13005DF589 /* platform_match.c in Sources */ = {isa = PBXBuildFile; fileRef = 8B306C34221C9D11005DF589 /* platform_match.c */; };
@@ -45,7 +46,6 @@
 		8B306C50221C9D13005DF589 /* kernel_slide.c in Sources */ = {isa = PBXBuildFile; fileRef = 8B306C45221C9D13005DF589 /* kernel_slide.c */; };
 		8B306C61221C9D8E005DF589 /* post.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B306C5E221C9D8E005DF589 /* post.m */; };
 		8B306C62221C9D8E005DF589 /* offsets.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B306C5F221C9D8E005DF589 /* offsets.m */; };
-		8BD18CC222266533005D83DA /* jelbrekLib.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8BD18CC122266533005D83DA /* jelbrekLib.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -112,6 +112,7 @@
 		8B277C95221F5A8F00BD9869 /* jelbrekLib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = jelbrekLib.h; sourceTree = "<group>"; };
 		8B277CA1221F6A9100BD9869 /* IOSurface.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOSurface.framework; path = ../../../../Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/IOSurface.framework; sourceTree = "<group>"; };
 		8B277CA7221F75C500BD9869 /* libjb.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libjb.a; sourceTree = "<group>"; };
+		8B2A08082229F9610015B116 /* jelbrekLib.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = jelbrekLib.a; sourceTree = "<group>"; };
 		8B306C2C221C968B005DF589 /* untar.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = untar.c; sourceTree = "<group>"; };
 		8B306C2E221C97B7005DF589 /* lzssdec.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = lzssdec.hpp; sourceTree = "<group>"; };
 		8B306C2F221C97B8005DF589 /* lzssdec.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = lzssdec.cpp; sourceTree = "<group>"; };
@@ -139,7 +140,6 @@
 		8B306C5F221C9D8E005DF589 /* offsets.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = offsets.m; sourceTree = "<group>"; };
 		8B306C60221C9D8E005DF589 /* offsets.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = offsets.h; sourceTree = "<group>"; };
 		8B306C66221C9EA7005DF589 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = ../../../../Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/IOKit.framework; sourceTree = "<group>"; };
-		8BD18CC122266533005D83DA /* jelbrekLib.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = jelbrekLib.a; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -151,7 +151,7 @@
 				8B277CA8221F75C500BD9869 /* libjb.a in Frameworks */,
 				8B277CA0221F6A8500BD9869 /* IOKit.framework in Frameworks */,
 				825D33952135D189008723F8 /* IOKit.tbd in Frameworks */,
-				8BD18CC222266533005D83DA /* jelbrekLib.a in Frameworks */,
+				8B2A08092229F9610015B116 /* jelbrekLib.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -261,7 +261,7 @@
 			isa = PBXGroup;
 			children = (
 				825D33932135D189008723F8 /* IOKit.tbd */,
-				8BD18CC122266533005D83DA /* jelbrekLib.a */,
+				8B2A08082229F9610015B116 /* jelbrekLib.a */,
 				8B277CA7221F75C500BD9869 /* libjb.a */,
 			);
 			path = libs;
@@ -677,6 +677,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
+				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;
 			};

@@ -2,7 +2,7 @@
 #include "kern_utils.h"
 #include "sandbox.h"
 #include "patchfinder64.h"
-#include "kexecute.h"
+#include "kernel_call.h"
 
 
 typedef uint64_t extension_hdr_t;
@@ -33,7 +33,7 @@ struct extension {
 };
 
 uint64_t _smalloc(uint64_t size) {
-	return kexecute(find_smalloc(), size, 0, 0, 0, 0, 0, 0);
+    return kernel_call_7(find_smalloc(), 1, size);
 }
 
 uint64_t smalloc(uint64_t size) {

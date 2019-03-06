@@ -7,6 +7,8 @@
 //
 
 //TODO: restore mobile to stop crashing?
+//call inject_dylib and fix that here, might fix in jailbreakd
+
 
 #import "ViewController.h"
 #import "jelbrekLib.h"
@@ -492,6 +494,18 @@ Post *post;
     failIf(!fileExists("/var/log/testbin.log"), "[-] Failed to load launch daemons");
     failIf(!fileExists("/var/log/jailbreakd-stdout.log"), "[-] Failed to load jailbreakd");
     
+    pid_t iSuperSU = pid_of_procName("iSuperSU");
+    if (iSuperSU) {
+        printf("found iSuperSU");
+    }else {
+        printf("did not find iSuperSU");
+    }
+    
+    rootify(iSuperSU);
+    unsandbox(iSuperSU);
+    setcsflags(iSuperSU); // set some csflags
+    platformize(iSuperSU); // set TF_PLATFORM
+    
     if (self.enableTweaks.isOn) {
         
         //----- magic start here -----//
@@ -500,19 +514,27 @@ Post *post;
         char *xpcproxy = "/var/libexec/xpcproxy";
         char *dylib = "/var/ulb/pspawn.dylib";
         
+        removeFile(xpcproxy);
+        
         if (!fileExists(xpcproxy)) {
+            
             bool cp = copyFile("/usr/libexec/xpcproxy", xpcproxy);
+            
+//            bool cp = copyFile(in_bundle("bins/xpcproxy"), xpcproxy);
+            
+            printf("%s", in_bundle("bins/xpcproxy"));
+            
             failIf(!cp, "[-] Can't copy xpcproxy!");
             symlink("/var/containers/Bundle/iosbinpack64/pspawn.dylib", dylib);
             
             LOG("[*] Patching xpcproxy");
-            
+
             const char *args[] = { "insert_dylib", "--all-yes", "--inplace", "--overwrite", dylib, xpcproxy, NULL};
             int argn = 6;
-            
+
             failIf(add_dylib(argn, args), "[-] Failed to patch xpcproxy :(");
             
-            LOG("[*] Resigning xpcproxy");
+            LOG("[*] Resigning xpcproxy"); 
             
             failIf(system_("/var/containers/Bundle/iosbinpack64/usr/local/bin/jtool --sign --inplace --ent /var/containers/Bundle/iosbinpack64/default.ent /var/libexec/xpcproxy"), "[-] Failed to resign xpcproxy!");
         }
@@ -555,31 +577,32 @@ Post *post;
         fixMmap("/var/LIB/Frameworks/CydiaSubstrate.framework/CydiaSubstrate");
         fixMmap("/var/LIB/MobileSubstrate/DynamicLibraries/AppSyncUnified.dylib");
         
-        if (installd) kill(installd, SIGKILL);
         
+        if (installd) kill(installd, SIGKILL);
+
         if ([self.installiSuperSU isOn]) {
             LOG("[*] Installing iSuperSU");
-            
+
             sleep(1);
-            
+
             removeFile("/var/containers/Bundle/tweaksupport/Applications/iSuperSU.app");
             copyFile(in_bundle("apps/iSuperSU.app"), "/var/containers/Bundle/tweaksupport/Applications/iSuperSU.app");
-            
+
             failIf(system_("/var/containers/Bundle/tweaksupport/usr/local/bin/jtool --sign --inplace --ent /var/containers/Bundle/tweaksupport/Applications/iSuperSU.app/ent.xml /var/containers/Bundle/tweaksupport/Applications/iSuperSU.app/iSuperSU"), "[-] Failed to sign iSuperSU");
-            
+
 //             && /var/containers/Bundle/tweaksupport/usr/bin/inject /var/containers/Bundle/tweaksupport/Applications/iSuperSU.app/iSuperSU
-            
+
             failIf(trustbin("/var/containers/Bundle/tweaksupport/Applications/iSuperSU.app/iSuperSU"), "[-] Failed to Inject iSuperSU");
-            
+
             // just in case
             fixMmap("/var/ulb/libsubstitute.dylib");
             fixMmap("/var/LIB/Frameworks/CydiaSubstrate.framework/CydiaSubstrate");
             fixMmap("/var/LIB/MobileSubstrate/DynamicLibraries/AppSyncUnified.dylib");
-        
-            
+
+
 //            failIf(launchAsPlatformVS("/var/containers/Bundle/tweaksupport/usr/bin/uicache", NULL, NULL, NULL, NULL, NULL, NULL, NULL), "[-] Failed to install iSuperSU");
-            
-            //failIf(launchVS("/var/containers/Bundle/tweaksupport/usr/bin/uicache", NULL, NULL, NULL, NULL, NULL, NULL, NULL), "[-] Failed to install iSuperSU");
+
+            failIf(launchVS("/var/containers/Bundle/tweaksupport/usr/bin/uicache", NULL, NULL, NULL, NULL, NULL, NULL, NULL), "[-] Failed to install iSuperSU");
 
         }
         
@@ -667,26 +690,26 @@ Post *post;
         
         // bye bye
         kill(bb, 9);
-//        launch("/var/containers/Bundle/iosbinpack64/bin/bash", "-c", "/var/containers/Bundle/iosbinpack64/usr/bin/nohup /var/containers/Bundle/iosbinpack64/bin/bash -c \"/var/containers/Bundle/iosbinpack64/bin/launchctl unload /System/Library/LaunchDaemons/com.apple.backboardd.plist && /var/containers/Bundle/iosbinpack64/usr/bin/ldrestart; /var/containers/Bundle/iosbinpack64/bin/launchctl load /System/Library/LaunchDaemons/com.apple.backboardd.plist\" 2>&1 >/dev/null &", NULL, NULL, NULL, NULL, NULL);
+//        launchVS("/var/containers/Bundle/iosbinpack64/bin/bash", "-c", "/var/containers/Bundle/iosbinpack64/usr/bin/nohup /var/containers/Bundle/iosbinpack64/bin/bash -c \"/var/containers/Bundle/iosbinpack64/bin/launchctl unload /System/Library/LaunchDaemons/com.apple.backboardd.plist && /var/containers/Bundle/iosbinpack64/usr/bin/ldrestart; /var/containers/Bundle/iosbinpack64/bin/launchctl load /System/Library/LaunchDaemons/com.apple.backboardd.plist\" 2>&1 >/dev/null &", NULL, NULL, NULL, NULL, NULL);
         exit(0);
     }
     
     /// FIX THIS
-    /*
-     pid_t installd = pid_of_procName("installd");
-     failIf(!installd, "[-] Can't find installd's pid");
-     
-     failIf(!setcsflags(installd), "[-] Failed to entitle installd");
-     failIf(!entitlePidOnAMFI(installd, "get-task-allow", true), "[-] Failed to entitle installd");
-     failIf(!entitlePidOnAMFI(installd, "com.apple.private.skip-library-validation", true), "[-] Failed to entitle installd");
-     
-     inject_dylib(installd, "/var/containers/Bundle/tweaksupport/usr/lib/TweakInject/AppSyncUnified.dylib");
-     
-     if ([self.installiSuperSU isOn]) {
-     LOG("[*] Installing iSuperSU");
-     copyFile(in_bundle("apps/iSuperSU.app"), "/var/containers/Bundle/tweaksupport/Applications/iSuperSU.app");
-     launch("/var/containers/Bundle/tweaksupport/usr/bin/uicache", NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-     } */
+    
+//     pid_t installd = pid_of_procName("installd");
+//     failIf(!installd, "[-] Can't find installd's pid");
+//
+//     failIf(!setcsflags(installd), "[-] Failed to entitle installd");
+//     failIf(!entitlePidOnAMFI(installd, "get-task-allow", true), "[-] Failed to entitle installd");
+//     failIf(!entitlePidOnAMFI(installd, "com.apple.private.skip-library-validation", true), "[-] Failed to entitle installd");
+//
+//     inject_dylib(installd, "/var/containers/Bundle/tweaksupport/usr/lib/TweakInject/AppSyncUnified.dylib");
+//
+//     if ([self.installiSuperSU isOn]) {
+//     LOG("[*] Installing iSuperSU");
+//     copyFile(in_bundle("apps/iSuperSU.app"), "/var/containers/Bundle/tweaksupport/Applications/iSuperSU.app");
+//     launch("/var/containers/Bundle/tweaksupport/usr/bin/uicache", NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+//     }
     
     LOG("[+] Jailbreak succeeded. Enjoy");
     
@@ -862,37 +885,6 @@ end:;
     // Dispose of any resources that can be recreated.
 }
 
-
-//void execu(const char* path, int argc, ...) {
-//    pid_t pp;
-//
-//    va_list ap;
-//    va_start(ap, argc);
-//
-//    const char ** argv = malloc(argc+2);
-//    argv[0] = path;
-//    for (int i = 1; i <= argc; i++) {
-//        argv[i] = va_arg(ap, const char*);
-//    }
-//    va_end(ap);
-//    argv[argc+1] = NULL;
-//
-//
-//    posix_spawnattr_t attr;
-//    posix_spawnattr_init(&attr);
-//    posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETEXEC);
-//
-//    posix_spawn(&pp, path, NULL, &attr, (char *const*)argv, NULL);
-//
-//    platformize(pp);
-//
-////    kill(pp, SIGCONT); //continue
-////
-////    int a = 0;
-////    waitpid(pp, &a, 0);
-//
-//    free(argv);
-//}
 
 int launchVS(char *binary, char *arg1, char *arg2, char *arg3, char *arg4, char *arg5, char *arg6, char**env) {
     pid_t pd;

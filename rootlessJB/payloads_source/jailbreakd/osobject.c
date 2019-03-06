@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include "kexecute.h"
+#include "kernel_call.h"
 #include "kmem.h"
 #include "patchfinder64.h"
 #include "osobject.h"
@@ -29,7 +30,7 @@ int OSDictionary_SetItem(uint64_t dict, const char *key, uint64_t val) {
 	uint64_t vtab = rk64(dict);
 	uint64_t f = rk64(vtab + off_OSDictionary_SetObjectWithCharP);
 
-	int rv = (int) kexecute(f, dict, ks, val, 0, 0, 0, 0);
+	int rv = (int) kernel_call_7(f, 3, dict, ks, val);
 
 	kfree(ks, len);
 
@@ -50,7 +51,7 @@ uint64_t _OSDictionary_GetItem(uint64_t dict, const char *key) {
 	uint64_t vtab = rk64(dict);
 	uint64_t f = rk64(vtab + off_OSDictionary_GetObjectWithCharP);
 
-	int rv = (int) kexecute(f, dict, ks, 0, 0, 0, 0, 0);
+	int rv = (int) kernel_call_7(f, 2, dict, ks);
 
 	kfree(ks, len);
 
@@ -73,7 +74,7 @@ int OSDictionary_Merge(uint64_t dict, uint64_t aDict) {
 	uint64_t vtab = rk64(dict);
 	uint64_t f = rk64(vtab + off_OSDictionary_Merge);
 
-	return (int) kexecute(f, dict, aDict, 0, 0, 0, 0, 0);
+	return (int) kernel_call_7(f, 2, dict, aDict);
 }
 
 // 1 on success, 0 on error
@@ -81,14 +82,14 @@ int OSArray_Merge(uint64_t array, uint64_t aArray) {
 	uint64_t vtab = rk64(array);
 	uint64_t f = rk64(vtab + off_OSArray_Merge);
 
-	return (int) kexecute(f, array, aArray, 0, 0, 0, 0, 0);
+	return (int) kernel_call_7(f, 2, array, aArray);
 }
 
 uint64_t _OSArray_GetObject(uint64_t array, unsigned int idx){
     uint64_t vtab = rk64(array);
     uint64_t f = rk64(vtab + off_OSArray_GetObject);
     
-    return kexecute(f, array, idx, 0, 0, 0, 0, 0);
+    return kernel_call_7(f, 2, array, idx);
 }
 
 uint64_t OSArray_GetObject(uint64_t array, unsigned int idx){
@@ -105,7 +106,7 @@ void OSArray_RemoveObject(uint64_t array, unsigned int idx){
     uint64_t vtab = rk64(array);
     uint64_t f = rk64(vtab + off_OSArray_RemoveObject);
     
-    (void)kexecute(f, array, idx, 0, 0, 0, 0, 0);
+    (void)kernel_call_7(f, 2, array, idx, 0, 0, 0, 0, 0);
 }
 
 // XXX error handling just for fun? :)
@@ -117,7 +118,7 @@ uint64_t _OSUnserializeXML(const char* buffer) {
 
 	uint64_t errorptr = 0;
 
-	uint64_t rv = kexecute(find_osunserializexml(), ks, errorptr, 0, 0, 0, 0, 0);
+	uint64_t rv = kernel_call_7(find_osunserializexml(), 2, ks, errorptr);
 	kfree(ks, len);
 
 	return rv;
@@ -137,25 +138,25 @@ uint64_t OSUnserializeXML(const char* buffer) {
 void OSObject_Release(uint64_t osobject) {
 	uint64_t vtab = rk64(osobject);
 	uint64_t f = rk64(vtab + off_OSObject_Release);
-	(void) kexecute(f, osobject, 0, 0, 0, 0, 0, 0);
+	(void) kernel_call_7(f, 1, osobject);
 }
 
 void OSObject_Retain(uint64_t osobject) {
 	uint64_t vtab = rk64(osobject);
 	uint64_t f = rk64(vtab + off_OSObject_Release);
-	(void) kexecute(f, osobject, 0, 0, 0, 0, 0, 0);
+	(void) kernel_call_7(f, 1, osobject);
 }
 
 uint32_t OSObject_GetRetainCount(uint64_t osobject) {
 	uint64_t vtab = rk64(osobject);
 	uint64_t f = rk64(vtab + off_OSObject_Release);
-	return (uint32_t) kexecute(f, osobject, 0, 0, 0, 0, 0, 0);
+	return (uint32_t) kernel_call_7(f, 1, osobject);
 }
 
 unsigned int OSString_GetLength(uint64_t osstring){
     uint64_t vtab = rk64(osstring);
     uint64_t f = rk64(vtab + off_OSString_GetLength);
-    return (unsigned int)kexecute(f, osstring, 0, 0, 0, 0, 0, 0);
+    return (unsigned int)kernel_call_7(f, 1, osstring);
 }
 
 char *OSString_CopyString(uint64_t osstring){

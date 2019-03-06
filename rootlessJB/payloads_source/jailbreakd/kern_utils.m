@@ -5,12 +5,12 @@
 #import "kmem.h"
 #import "patchfinder64.h"
 #import "kexecute.h"
+#import "kernel_call.h"
 #import "offsetof.h"
 #import "osobject.h"
 #import "sandbox.h"
 #import "offsets.h"
 #import "cs_blob.h"
-#include "kernel_call.h"
 
 #define PROC_PIDPATHINFO_MAXSIZE  (4*MAXPATHLEN)
 int proc_pidpath(pid_t pid, void *buffer, uint32_t buffersize);
@@ -111,11 +111,11 @@ int vnode_lookup(const char *path, int flags, uint64_t *vnode, uint64_t vfs_cont
 }
 
 int vnode_put(uint64_t vnode) {
-    if (off.vnode_put) {
+    //if (off.vnode_put) {
         return kernel_call_7(off.vnode_put + kernel_slide, 1, vnode);
-    }
+    //}
     
-    //uint32_t usecount = rk32(vnode + 0x60);
+    /*//uint32_t usecount = rk32(vnode + 0x60);
     uint32_t iocount = rk32(vnode + 0x64);
     
     if (iocount <= 1) return 0;
@@ -125,7 +125,7 @@ int vnode_put(uint64_t vnode) {
         wk32(vnode + 0x64, iocount);
     //}
     
-    return 0;
+    return 0;*/
 }
 
 uint64_t get_vfs_context() {

@@ -1,7 +1,7 @@
 TARGET  = jailbreakd
 OUTDIR ?= ../../bootstrap/bins
 
-CC      = xcrun -sdk iphoneos cc -arch arm64 -Iinclude
+CC      = xcrun -sdk iphoneos cc -arch arm64e -Iinclude
 #-Linclude -lrocketbootstrap -Iinclude AppSupport.tbd
 LDID    = ldid2
 CFLAGS  = -Wall -Wno-unused-variable -Wno-unused-function

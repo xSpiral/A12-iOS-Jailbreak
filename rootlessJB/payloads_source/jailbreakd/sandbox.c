@@ -1,8 +1,9 @@
 #include "kmem.h"
 #include "kern_utils.h"
+#include "kernel_call.h"
 #include "sandbox.h"
 #include "patchfinder64.h"
-#include "kernel_call.h"
+#include "kexecute.h"
 
 
 typedef uint64_t extension_hdr_t;
@@ -33,7 +34,7 @@ struct extension {
 };
 
 uint64_t _smalloc(uint64_t size) {
-    return kernel_call_7(find_smalloc(), 1, size);
+	return kernel_call_7(find_smalloc(), 1, size);
 }
 
 uint64_t smalloc(uint64_t size) {

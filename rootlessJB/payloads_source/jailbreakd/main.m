@@ -14,6 +14,9 @@
 #include "kern_utils.h"
 #include "kmem.h"
 #include "kexecute.h"
+#include "kernel_call.h"
+#include "parameters.h"
+#include "kernel_memory.h"
 #include "offsets.h"
 
 #define PROC_PIDPATHINFO_MAXSIZE  (4*MAXPATHLEN)
@@ -98,7 +101,11 @@ int runserver(){
     kernel_slide = kernel_base - 0xFFFFFFF007004000;
     NSLog(@"[jailbreakd] slide: 0x%016llx", kernel_slide);
 
-    init_kexecute();
+//    init_kexecute();
+    
+    parameters_init();
+    
+    kernel_call_init();
 
     struct sockaddr_in serveraddr; /* server's addr */
     struct sockaddr_in clientaddr; /* client addr */
@@ -128,7 +135,8 @@ int runserver(){
 
     if (bind(sockfd, (struct sockaddr *)&serveraddr, sizeof(serveraddr)) < 0){
         NSLog(@"[jailbreakd] Error binding...");
-        term_kexecute();
+//        term_kexecute();
+        kernel_call_deinit();
         exit(-1);
     }
     NSLog(@"[jailbreakd] Server running!");
@@ -280,7 +288,8 @@ int runserver(){
         
         else if (command == JAILBREAKD_COMMAND_EXIT){
             NSLog(@"Got Exit Command! Goodbye!");
-            term_kexecute();
+//            term_kexecute();
+            kernel_call_deinit();
             exit(0);
         }
     }

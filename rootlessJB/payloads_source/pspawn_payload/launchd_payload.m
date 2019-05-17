@@ -44,6 +44,10 @@ fflush(log_file); \
 #define SBINJECT_PAYLOAD_DYLIB "/var/ulb/TweakInject.dylib"
 
 const char* xpcproxy_blacklist[] = {
+ "lskdmsed",                  // This causes issues with netflix
+ "trustd",                    // Crash issues
+ "seputil",                   // Crash issues
+ "TVRemoteConnectionService", // Crash issues
  "debugserver",            // Xcode debugging
  "com.apple.diagnosticd",  // syslog
  "MTLCompilerService",     // ?_?
@@ -53,7 +57,9 @@ const char* xpcproxy_blacklist[] = {
  NULL
  };
 
-typedef int (*pspawn_t)(pid_t * pid, const char* path, const posix_spawn_file_actions_t *file_actions, posix_spawnattr_t *attrp, char const* argv[], const char* envp[]);
+//*pid not * pid (afaik)
+//it * pid shouldn't cause any issues, if it does change it back.
+typedef int (*pspawn_t)(pid_t *pid, const char* path, const posix_spawn_file_actions_t *file_actions, posix_spawnattr_t *attrp, char const* argv[], const char* envp[]);
 
 pspawn_t old_pspawn, old_pspawnp;
 
@@ -168,11 +174,14 @@ int fake_posix_spawn_common(pid_t * pid, const char* path, const posix_spawn_fil
 #endif
     
     calljailbreakd(getpid(), JAILBREAKD_COMMAND_ENTITLE_AND_SIGCONT_FROM_XPCPROXY);
-    
-    // dont leak jbd fd into execd process
-    closejailbreakfd();
 
     origret = old(pid, path, file_actions, newattrp, argv, newenvp);
+ 
+    //Call jailbreakd on the child process.
+    calljailbreakd(pid, JAILBREAKD_COMMAND_ENTITLE_AND_SIGCONT_FROM_XPCPROXY);
+
+    // dont leak jbd fd into execd process
+    closejailbreakfd();
     
     return origret;
 }

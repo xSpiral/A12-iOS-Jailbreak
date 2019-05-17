@@ -8,7 +8,8 @@
 #import <sys/types.h>
 #import <sys/mman.h>
 
-#import "fishhook.h"
+// #import "fishhook.h"
+#import "substitute.h"
 
 #define TWEAKINJECTDEBUG 1
 
@@ -185,7 +186,7 @@ int file_exist(char *filename) {
 typedef void *(*dlopen_t)(const char *filename, int flag);
 dlopen_t old_dlopen;
 
-void *patched_dlopen(const char *filename, int flag) {
+int *patched_dlopen(const char *filename, int flag) {
     void *ret = old_dlopen(filename, flag);
     if (ret == NULL) {
         if (strstr(filename, "/var/containers/Bundle") && strstr(filename, ".dylib")) {
@@ -200,11 +201,42 @@ void *patched_dlopen(const char *filename, int flag) {
     return ret;
 }
 
+/*
 void dlopen_patch() {
-    struct rebinding rebindings[] = {
+        struct rebinding rebindings[] = {
         {"dlopen", (void *)patched_dlopen, (void **)&old_dlopen}
     };
     rebind_symbols(rebindings, 1);
+
+}
+*/
+int entitle(pid_t pid) {
+    if (access(LIBJAILBREAK_DYLIB, F_OK) != 0) {
+        printf("[!] %s was not found!\n", LIBJAILBREAK_DYLIB);
+        return;
+    }
+
+void hook_dlopen(void) {
+    entitle(getpid());
+
+    int *handle = dlopen("/var/ulb/libsubstitute.dylib", RTLD_NOW);
+    if (!handle) {
+        DEBUGLOG("%s", dlerror());
+        return;
+    }
+int (*substitute_hook_functions)(const struct substitute_function_hook *hooks, size_t nhooks, struct substitute_function_hook_record **recordp, int options) = dlsym(handle, "substitute_hook_functions");
+    if (!substitute_hook_functions) {
+        DEBUGLOG("%s", dlerror());
+        return;
+    }
+
+
+struct substitute_function_hook dl_hook;
+    dl_hook.function = dlopen;
+    dl_hook.replacement = patched_dlopen;
+    dl_hook.old_ptr = &old_dlopen;
+    dl_hook.options = 0;
+    substitute_hook_functions(&dl_hook, 1, NULL, SUBSTITUTE_NO_THREAD_SAFETY);
 }
 
 BOOL safeMode = false;
@@ -214,9 +246,10 @@ static void ctor(void) {
     @autoreleasepool {
         
         //%init(mmap_patch);
-        dlopen_patch(); // mmap patch triggers some weird behavior;
+        //dlopen_patch(); // mmap patch triggers some weird behavior;
                              // maybe do a low level dyld patch?
                              // well idk if I'm sure how to do that
+        hook_dlopen();
         
         if (NSBundle.mainBundle.bundleIdentifier == nil || ![NSBundle.mainBundle.bundleIdentifier isEqualToString:@"org.coolstar.SafeMode"]){
             safeMode = false;

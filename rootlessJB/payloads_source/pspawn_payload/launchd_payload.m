@@ -20,7 +20,7 @@
 #include "common.h"
 
 #define PSPAWN_PAYLOAD_DEBUG 1
-#define LIBJAILBREAK_DYLIB      (const char *)("/usr/lib/libjailbreak.dylib")
+#define LIBJAILBREAK_DYLIB      (const char *)("/var/ulb/libjailbreak.dylib")
 #ifdef PSPAWN_PAYLOAD_DEBUG
 #define LAUNCHD_LOG_PATH "/var/log/pspawn_payload_launchd.log"
 // XXX multiple xpcproxies opening same file

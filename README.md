@@ -10,8 +10,7 @@ Blah blah, read this: [How to make a jailbreak without a filesystem remount as r
 
 ## Future Support
 
-- All A9-A11 devices
-- All A7-A8 devices
+- All A7-A11 devices
 
 
 ## Usage notes

@@ -15,11 +15,12 @@
 #include <netdb.h>
 #include <pthread.h>
 #include <Foundation/Foundation.h>
-#include "fishhook.h"
+// #include "fishhook.h"
+#include "substitute.h"
 #include "common.h"
 
 #define PSPAWN_PAYLOAD_DEBUG 1
-
+#define LIBJAILBREAK_DYLIB      (const char *)("/usr/lib/libjailbreak.dylib")
 #ifdef PSPAWN_PAYLOAD_DEBUG
 #define LAUNCHD_LOG_PATH "/var/log/pspawn_payload_launchd.log"
 // XXX multiple xpcproxies opening same file
@@ -185,16 +186,57 @@ int fake_posix_spawnp(pid_t * pid, const char* file, const posix_spawn_file_acti
     return fake_posix_spawn_common(pid, file, file_actions, attrp, argv, envp, old_pspawnp);
 }
 
-void rebind_pspawns(void) {
-    struct rebinding rebindings[] = {
-        {"posix_spawn", (void *)fake_posix_spawn, (void **)&old_pspawn},
-        {"posix_spawnp", (void *)fake_posix_spawnp, (void **)&old_pspawnp},
-    };
-    
-    rebind_symbols(rebindings, 2);
+void entitle(pid_t pid) {
+    if (access(LIBJAILBREAK_DYLIB, F_OK) != 0) {
+        printf("[!] %s was not found!\n", LIBJAILBREAK_DYLIB);
+        return;
+    }
+
+    void *handle = dlopen(LIBJAILBREAK_DYLIB, RTLD_LAZY);
+    if (handle == NULL) {
+        printf("[!] Failed to open libjailbreak.dylib: %s\n", dlerror());
+        return;
+    }
+
+    typedef int (*entitle_t)(pid_t pid, uint32_t flags);
+    entitle_t entitle_ptr = (entitle_t)dlsym(handle, "jb_oneshot_entitle_now");
+    entitle_ptr(pid, FLAG_PLATFORMIZE);
+    printf("[!] Platformized.\n");
+}
+
+void hook_pspawns(void) {
+    entitle(getpid());
+
+    void *handle = dlopen("/var/ulb/libsubstitute.dylib", RTLD_NOW);
+    if (!handle) {
+        DEBUGLOG("%s", dlerror());
+        return;
+    }
+    int (*substitute_hook_functions)(const struct substitute_function_hook *hooks, size_t nhooks, struct substitute_function_hook_record **recordp, int options) = dlsym(handle, "substitute_hook_functions");
+    if (!substitute_hook_functions) {
+        DEBUGLOG("%s", dlerror());
+        return;
+    }
+
+    struct substitute_function_hook ps_hook;
+    ps_hook.function = posix_spawn;
+    ps_hook.replacement = fake_posix_spawn;
+    ps_hook.old_ptr = &old_pspawn;
+    ps_hook.options = 0;
+    substitute_hook_functions(&ps_hook, 1, NULL, SUBSTITUTE_NO_THREAD_SAFETY);
+
+    struct substitute_function_hook psp_hook;
+    psp_hook.function = posix_spawnp;
+    psp_hook.replacement = fake_posix_spawnp;
+    psp_hook.old_ptr = &old_pspawnp;
+    psp_hook.options = 0;
+    substitute_hook_functions(&psp_hook, 1, NULL, SUBSTITUTE_NO_THREAD_SAFETY);
+}
+
 }
 
 __attribute__ ((constructor))
 static void ctor(void) {
-    rebind_pspawns();
+    // rebind_pspawns();
+     hook_pspawns();
 }

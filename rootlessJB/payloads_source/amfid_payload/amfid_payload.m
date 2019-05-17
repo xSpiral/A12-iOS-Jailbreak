@@ -10,9 +10,14 @@
 #import <Foundation/Foundation.h>
 #include <CommonCrypto/CommonDigest.h>
 
-#include "fishhook.h"
+#include "substitute.h"
+// #include "fishhook.h"
 #include "cs_blobs.h"
 #include "common.h"
+
+#include "substitute.h"
+
+extern int MISValidateSignatureAndCopyInfo(NSString* file, NSDictionary* options, NSMutableDictionary** info);
 
 static unsigned int
 hash_rank(const CodeDirectory *cd)
@@ -214,7 +219,7 @@ int fake_MISValidateSignatureAndCopyInfo(NSString* file, NSDictionary* options, 
     return 0;
 }
 
-void rebind_mis(void) {
+/* void rebind_mis(void) {
     void *libmis = dlopen("/usr/lib/libmis.dylib", RTLD_NOW); //Force binding now
     old_MISValidateSignatureAndCopyInfo = dlsym(libmis, "MISValidateSignatureAndCopyInfo");
     struct rebinding rebindings[] = {
@@ -227,4 +232,24 @@ void rebind_mis(void) {
 __attribute__ ((constructor))
 static void ctor(void) {
     rebind_mis();
+    */
+
+    void *handle = dlopen("/var/ulb/libsubstitute.dylib", RTLD_NOW);
+    if (!handle) {
+        ERROR("%s", dlerror());
+        return;
+    }
+    int (*substitute_hook_functions)(const struct substitute_function_hook *hooks, size_t nhooks, struct substitute_function_hook_record **recordp, int options) = dlsym(handle, "substitute_hook_functions");
+    if (!substitute_hook_functions) {
+        ERROR("%s", dlerror());
+        return;
+    }
+
+     struct substitute_function_hook mvsaci_hook;
+    mvsaci_hook.function = MISValidateSignatureAndCopyInfo;
+    mvsaci_hook.replacement = fake_MISValidateSignatureAndCopyInfo;
+    mvsaci_hook.old_ptr = &old_MISValidateSignatureAndCopyInfo;
+    mvsaci_hook.options = 0;
+    substitute_hook_functions(&mvsaci_hook, 1, NULL, SUBSTITUTE_NO_THREAD_SAFETY);
+
 }

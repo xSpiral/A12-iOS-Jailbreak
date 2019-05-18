@@ -9,14 +9,38 @@
 typedef uint64_t extension_hdr_t;
 typedef uint64_t extension_t;
 
-struct extension_hdr {
+struct extension_hdr11 {
 /* 0x00 */	extension_hdr_t next;
 /* 0x08 */  extension_t ext_lst;
 /* 0x10 */	char desc[];
 /* 0x18 */
 };
 
-struct extension {
+struct extension_hdr12 {
+    /* 0x00 */    extension_hdr_t next;
+    /* 0x8 */     extension_t ext_lst;
+    /* 0x10 */    char desc[];
+    /* 0x18 */
+};
+
+struct extension12 {
+    extension_t next;
+    uint64_t desc;              // always 0xffffffffffffffff;
+    uint8_t something[20];      // all zero
+    uint16_t num;               // one
+    uint8_t type;               // see ext_type enum
+    uint8_t num3;               // one
+    uint32_t subtype;           // either 0 or 4 (or whatever unhex gave?..)
+    uint32_t num4;              // another number
+    void* data;                 // a c string, meaning depends on type and hdr which had this extension
+    uint64_t data_len;          // strlen(data)
+    uint16_t num5;              // another one!
+    uint8_t something_2[14];    // something v2.0
+    uint64_t ptr3;              // it's always 0 for files
+    uint64_t ptr4;              // idk
+};
+
+struct extension11 {
     extension_t next;
     uint64_t desc;              // always 0xffffffffffffffff;
     uint8_t something[20];      // all zero
@@ -68,25 +92,44 @@ uint64_t extension_create_file(const char* path, uint64_t nextptr) {
         return 0;
     }
     
-    uint64_t ext_p = smalloc(sizeof(struct extension));
+  uint64_t ext_p = 0;
+
+    if (kCFCoreFoundationVersionNumber >= 1535.12) {
+        ext_p = smalloc(sizeof(struct extension12));
+    } else {
+        ext_p = smalloc(sizeof(struct extension11));
+    }
+
     uint64_t ks = sstrdup(path);
     
     if (ext_p && ks) {
-        struct extension ext;
-        bzero(&ext, sizeof(ext));
-        ext.next = (extension_t)nextptr;
-        ext.desc = 0xffffffffffffffff;
-        
-        ext.type = 0;
-        ext.subtype = 0;
-        
-        ext.data = (void*)ks;
-        ext.data_len = slen;
-        
-        ext.num = 1;
-        ext.num3 = 1;
-        
-        kwrite(ext_p, &ext, sizeof(ext));
+        if (kCFCoreFoundationVersionNumber >= 1535.12) {
+            struct extension12 ext;
+            bzero(&ext, sizeof(ext));
+            ext.next = (extension_t)nextptr;
+            ext.desc = 0xffffffffffffffff;
+
+            ext.type = 0;
+            ext.subtype = 0;
+
+            ext.data = (void*)ks;
+            ext.data_len = slen;
+
+            ext.num = 1;
+            ext.num3 = 1;
+
+            kwrite(ext_p, &ext, sizeof(ext));
+        } else {
+            struct extension11 ext;
+            bzero(&ext, sizeof(ext));
+            ext.next = nextptr;
+            ext.desc = 0xffffffffffffffff;
+
+            ext.data = ks;
+            ext.data_len = slen;
+
+            kwrite(ext_p, &ext, sizeof(ext));
+        }
     } else {
         // XXX oh no a leak
     }

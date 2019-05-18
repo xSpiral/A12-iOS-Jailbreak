@@ -4,6 +4,7 @@
 #include "kmem.h"
 #include "patchfinder64.h"
 #include "osobject.h"
+#include "pac.h"
 
 // offsets in vtable:
 static uint32_t off_OSDictionary_SetObjectWithCharP = sizeof(void*) * 0x1F;
@@ -26,8 +27,9 @@ int OSDictionary_SetItem(uint64_t dict, const char *key, uint64_t val) {
 
 	uint64_t ks = kalloc(len);
 	kwrite(ks, key, len);
-
+  vtab = kernel_xpacd(vtab);
 	uint64_t vtab = rk64(dict);
+  f = kernel_xpaci(f);
 	uint64_t f = rk64(vtab + off_OSDictionary_SetObjectWithCharP);
 
 	int rv = (int) kernel_call_7(f, 3, dict, ks, val);
@@ -72,7 +74,9 @@ uint64_t OSDictionary_GetItem(uint64_t dict, const char *key) {
 // 1 on success, 0 on error
 int OSDictionary_Merge(uint64_t dict, uint64_t aDict) {
 	uint64_t vtab = rk64(dict);
+	  vtab = kernel_xpacd(vtab);
 	uint64_t f = rk64(vtab + off_OSDictionary_Merge);
+ f = kernel_xpaci(f);
 
 	return (int) kernel_call_7(f, 2, dict, aDict);
 }
@@ -80,15 +84,19 @@ int OSDictionary_Merge(uint64_t dict, uint64_t aDict) {
 // 1 on success, 0 on error
 int OSArray_Merge(uint64_t array, uint64_t aArray) {
 	uint64_t vtab = rk64(array);
+	vtab = kernel_xpacd(vtab);
 	uint64_t f = rk64(vtab + off_OSArray_Merge);
+ f = kernel_xpaci(f);
 
 	return (int) kernel_call_7(f, 2, array, aArray);
 }
 
 uint64_t _OSArray_GetObject(uint64_t array, unsigned int idx){
     uint64_t vtab = rk64(array);
+	 vtab = kernel_xpacd(vtab);
     uint64_t f = rk64(vtab + off_OSArray_GetObject);
-    
+    f = kernel_xpaci(f);
+
     return kernel_call_7(f, 2, array, idx);
 }
 
@@ -104,8 +112,10 @@ uint64_t OSArray_GetObject(uint64_t array, unsigned int idx){
 
 void OSArray_RemoveObject(uint64_t array, unsigned int idx){
     uint64_t vtab = rk64(array);
+	vtab = kernel_xpacd(vtab);
     uint64_t f = rk64(vtab + off_OSArray_RemoveObject);
-    
+    f = kernel_xpaci(f);
+
     (void)kernel_call_7(f, 2, array, idx, 0, 0, 0, 0, 0);
 }
 
@@ -137,25 +147,33 @@ uint64_t OSUnserializeXML(const char* buffer) {
 
 void OSObject_Release(uint64_t osobject) {
 	uint64_t vtab = rk64(osobject);
+	vtab = kernel_xpacd(vtab);
 	uint64_t f = rk64(vtab + off_OSObject_Release);
+	 f = kernel_xpaci(f);
 	(void) kernel_call_7(f, 1, osobject);
 }
 
 void OSObject_Retain(uint64_t osobject) {
 	uint64_t vtab = rk64(osobject);
+vtab = kernel_xpacd(vtab);	
 	uint64_t f = rk64(vtab + off_OSObject_Release);
+	f = kernel_xpaci(f);
 	(void) kernel_call_7(f, 1, osobject);
 }
 
 uint32_t OSObject_GetRetainCount(uint64_t osobject) {
 	uint64_t vtab = rk64(osobject);
+	vtab = kernel_xpacd(vtab);
 	uint64_t f = rk64(vtab + off_OSObject_Release);
+	f = kernel_xpaci(f);
 	return (uint32_t) kernel_call_7(f, 1, osobject);
 }
 
 unsigned int OSString_GetLength(uint64_t osstring){
     uint64_t vtab = rk64(osstring);
+	vtab = kernel_xpacd(vtab);
     uint64_t f = rk64(vtab + off_OSString_GetLength);
+	 f = kernel_xpaci(f);
     return (unsigned int)kernel_call_7(f, 1, osstring);
 }
 

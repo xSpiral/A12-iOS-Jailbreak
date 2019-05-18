@@ -12,6 +12,20 @@
 #import "offsets.h"
 #import "cs_blob.h"
 
+uint64_t offset_kernel_task;
+uint64_t offset_paciza_pointer__l2tp_domain_module_start;
+uint64_t offset_paciza_pointer__l2tp_domain_module_stop;
+uint64_t offset_l2tp_domain_inited;
+uint64_t offset_sysctl__net_ppp_l2tp;
+uint64_t offset_sysctl_unregister_oid;
+uint64_t offset_mov_x0_x4__br_x5;
+uint64_t offset_mov_x9_x0__br_x1;
+uint64_t offset_mov_x10_x3__br_x6;
+uint64_t offset_kernel_forge_pacia_gadget;
+uint64_t offset_kernel_forge_pacda_gadget;
+uint64_t offset_IOUserClient__vtable;
+uint64_t offset_IORegistryEntry__getRegistryEntryID;
+
 #define PROC_PIDPATHINFO_MAXSIZE  (4*MAXPATHLEN)
 int proc_pidpath(pid_t pid, void *buffer, uint32_t buffersize);
 
@@ -274,6 +288,7 @@ const char* abs_path_exceptions[] = {
     // handling for /private/var/mobile/* in sandbox
     "/private/var/mobile/Library",
     "/private/var/mnt",
+    "System/Library/Caches",
     NULL
 };
 
@@ -287,6 +302,7 @@ uint64_t get_exception_osarray(void) {
                                   "<string>/private/var/containers/Bundle/tweaksupport/</string>"
                                   "<string>/private/var/mobile/Library/</string>"
                                   "<string>/private/var/mnt/</string>"
+                                  "<string>/System/Library/Caches/</string>"
                                   "</array>");
     }
     

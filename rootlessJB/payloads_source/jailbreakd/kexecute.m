@@ -4,6 +4,11 @@
 #include "patchfinder64.h"
 #include "offsetof.h"
 #include <Foundation/Foundation.h>
+#include "common.h"
+#include "kernel_call.h"
+#include "parameters.h"
+#include "kc_parameters.h"
+#include "kernel_memory.h"
 
 mach_port_t prepare_user_client(void) {
   kern_return_t err;
@@ -35,6 +40,13 @@ static uint64_t fake_client;
 const int fake_kalloc_size = 0x1000;
 
 void init_kexecute(void) {
+  #if __arm64e__
+    parameters_init();
+    kernel_task_port = tfp0;
+    current_task = rk64(find_port(mach_task_self()) + offsetof_ip_kobject);
+    kernel_task = rk64(offset_kernel_task);
+    kernel_call_init();
+#else
     user_client = prepare_user_client();
 
     // From v0rtex - get the IOSurfaceRootUserClient port, and then the address of the actual client, and vtable
@@ -83,16 +95,24 @@ void init_kexecute(void) {
     wk64(fake_vtable+8*0xB7, find_add_x0_x0_0x40_ret());
 
     NSLog(@"Wrote the `add x0, x0, #0x40; ret;` gadget over getExternalTrapForIndex");
+    #endif
 }
 
 void term_kexecute(void) {
+  #if __arm64e__
+    kernel_call_deinit();
+    #else
     wk64(IOSurfaceRootUserClient_port + offsetof_ip_kobject, IOSurfaceRootUserClient_addr);
     kfree(fake_vtable, fake_kalloc_size);
     kfree(fake_client, fake_kalloc_size);
+    #endif
 }
 
 uint64_t kexecute(uint64_t addr, uint64_t x0, uint64_t x1, uint64_t x2, uint64_t x3, uint64_t x4, uint64_t x5, uint64_t x6) {
-    
+    uint64_t returnval = 0;
+#if __arm64e__
+    returnval = kernel_call_7(addr, 7, x0, x1, x2, x3, x4, x5, x6);
+#else
     while (kexecute_lock){
       NSLog(@"Kexecute locked. Waiting for 10ms.");
       usleep(10000);
@@ -115,9 +135,10 @@ uint64_t kexecute(uint64_t addr, uint64_t x0, uint64_t x1, uint64_t x2, uint64_t
     uint64_t offx28 = rk64(fake_client+0x48);
     wk64(fake_client+0x40, x0);
     wk64(fake_client+0x48, addr);
-    uint64_t returnval = IOConnectTrap6(user_client, 0, (uint64_t)(x1), (uint64_t)(x2), (uint64_t)(x3), (uint64_t)(x4), (uint64_t)(x5), (uint64_t)(x6));
+     returnval = IOConnectTrap6(user_client, 0, (uint64_t)(x1), (uint64_t)(x2), (uint64_t)(x3), (uint64_t)(x4), (uint64_t)(x5), (uint64_t)(x6));
     wk64(fake_client+0x40, offx20);
     wk64(fake_client+0x48, offx28);
     kexecute_lock = 0;
     return returnval;
+    #endif
 }

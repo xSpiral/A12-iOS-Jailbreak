@@ -6,7 +6,7 @@
 //  Copyright © 2018 Jake James. All rights reserved.
 //
 
-//TODO: restore mobile to stop crashing?
+
 //call inject_dylib and fix that here, might fix in jailbreakd
 
 

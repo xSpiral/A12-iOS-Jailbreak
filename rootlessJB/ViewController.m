@@ -201,6 +201,7 @@ Post *post;
     
     offs_init();
     
+    // Initialize Kernel Execution
     if (kernel_call_init()){
         printf("Kernel exectution initialized");
     }else {

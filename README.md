@@ -56,5 +56,5 @@ patcher usage:
 - fix patchfinder with trustcache 
 - testing testing testing
 
-Thanks to: Ian Beer, Brandon Azad, Jonathan Levin, Electra Team, IBSparkes, Sammy Guichelaar, Sam Bingner
+Thanks to: Ian Beer, Brandon Azad, Jonathan Levin, Electra Team, IBSparkes, Sammy Guichelaar, Sam Bingner, xSpiral Team
 

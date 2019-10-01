@@ -51,5 +51,10 @@ All executables must have at least these two entitlements:
 patcher usage:
 ./patcher /path/to/deb /path/to/output_folder
 
+# TODO (iOS 12-12.1.2, A12 Devices)
+- create pmap bypass to enable executable mappings for binaries
+- fix patchfinder with trustcache 
+- testing testing testing
+
 Thanks to: Ian Beer, Brandon Azad, Jonathan Levin, Electra Team, IBSparkes, Sammy Guichelaar, unc0ver by pwn20wnd & sbingner
 
